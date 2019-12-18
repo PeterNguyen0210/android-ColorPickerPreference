@@ -16,6 +16,7 @@
 
 package net.margaritov.preference.colorpicker;
 
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -33,6 +34,8 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 
 import java.util.Locale;
 
@@ -61,8 +64,8 @@ public class ColorPickerDialog
         if (getContext().getResources().getConfiguration().orientation != mOrientation) {
             final int oldcolor = mOldColor.getColor();
             final int newcolor = mNewColor.getColor();
-            mLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-            setUp(oldcolor);
+            mLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            setUp(mLayout.getContext(), oldcolor);
             mNewColor.setColor(newcolor);
             mColorPicker.setColor(newcolor);
         }
@@ -75,22 +78,23 @@ public class ColorPickerDialog
     public ColorPickerDialog(Context context, int initialColor) {
         super(context);
 
-        init(initialColor);
+        init(context, initialColor);
     }
 
-    private void init(int color) {
+    private void init(Context context, int color) {
         // To fight color banding.
-        getWindow().setFormat(PixelFormat.RGBA_8888);
+        if(getWindow() != null)
+            getWindow().setFormat(PixelFormat.RGBA_8888);
 
-        setUp(color);
+        setUp(context, color);
 
     }
 
-    private void setUp(int color) {
+    @SuppressLint("InflateParams")
+    private void setUp(Context context, int color) {
 
-        LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mLayout = LayoutInflater.from(context).inflate(R.layout.dialog_color_picker, null);
 
-        mLayout = inflater.inflate(R.layout.dialog_color_picker, null);
         mLayout.getViewTreeObserver().addOnGlobalLayoutListener(this);
 
         mOrientation = getContext().getResources().getConfiguration().orientation;
@@ -112,9 +116,11 @@ public class ColorPickerDialog
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    }
                     String s = mHexVal.getText().toString();
-                    if (s.length() > 5 || s.length() < 10) {
+                    if (s.length() > 5 && s.length() < 10) {
                         try {
                             int c = ColorPickerPreference.convertToColorInt(s.toString());
                             mColorPicker.setColor(c, true);
@@ -237,7 +243,7 @@ public class ColorPickerDialog
     }
 
     @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
+    public void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         mOldColor.setColor(savedInstanceState.getInt("old_color"));
         mColorPicker.setColor(savedInstanceState.getInt("new_color"), true);

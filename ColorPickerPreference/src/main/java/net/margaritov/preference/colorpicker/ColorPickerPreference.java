@@ -24,7 +24,10 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.preference.Preference;
+
+import androidx.preference.Preference;
+import androidx.preference.PreferenceViewHolder;
+
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageView;
@@ -42,8 +45,8 @@ public class ColorPickerPreference
         Preference.OnPreferenceClickListener,
         ColorPickerDialog.OnColorChangedListener {
 
-    View mView;
-    ColorPickerDialog mDialog;
+    private PreferenceViewHolder mView;
+    private ColorPickerDialog mDialog;
     private int mValue = Color.BLACK;
     private float mDensity = 0;
     private boolean mAlphaSliderEnabled = false;
@@ -82,10 +85,6 @@ public class ColorPickerPreference
         }
     }
 
-    @Override
-    protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        onColorChanged(restoreValue ? getPersistedInt(mValue) : (Integer) defaultValue);
-    }
 
     private void init(Context context, AttributeSet attrs) {
         mDensity = getContext().getResources().getDisplayMetrics().density;
@@ -97,11 +96,12 @@ public class ColorPickerPreference
     }
 
     @Override
-    protected void onBindView(View view) {
-        super.onBindView(view);
-        mView = view;
+    public void onBindViewHolder(PreferenceViewHolder holder) {
+        super.onBindViewHolder(holder);
+        mView = holder;
         setPreviewColor();
     }
+
 
     private void setPreviewColor() {
         if (mView == null) return;
@@ -122,7 +122,7 @@ public class ColorPickerPreference
         }
         widgetFrameView.addView(iView);
         widgetFrameView.setMinimumWidth(0);
-        iView.setBackgroundDrawable(new AlphaPatternDrawable((int) (5 * mDensity)));
+        iView.setBackground(new AlphaPatternDrawable((int) (5 * mDensity)));
         iView.setImageBitmap(getPreviewBitmap());
     }
 
@@ -155,7 +155,7 @@ public class ColorPickerPreference
         setPreviewColor();
         try {
             getOnPreferenceChangeListener().onPreferenceChange(this, color);
-        } catch (NullPointerException e) {
+        } catch (NullPointerException ignored) {
 
         }
     }
